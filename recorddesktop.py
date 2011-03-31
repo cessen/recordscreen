@@ -11,6 +11,10 @@ import optparse
 import subprocess
 import re
 
+DEFAULT_FILE_EXTENSION = ".avi"
+ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
+
+
 # Optional packages
 have_tk = False
 try:
@@ -25,32 +29,6 @@ try:
     have_multiproc = True
 except ImportError:
     pass
-
-
-def get_desktop_resolution():
-    """ Returns the resolution of the desktop as a tuple.
-    """
-    if have_tk:
-        # Use tk to get the desktop resolution if we have it
-        root = Tkinter.Tk()
-        width = root.winfo_screenwidth()
-        height = root.winfo_screenheight()
-        root.destroy()
-        return (width, height)
-    else:
-        # Otherwise call xdpyinfo and parse its output
-        try:
-            proc = subprocess.Popen("xdpyinfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except OSError:
-            return None
-        out, err = proc.communicate()
-        lines = out.split("\n")
-        for line in lines:
-            if "dimensions" in line:
-                line = re.sub(".*dimensions:[ ]*", "", line)
-                line = re.sub("[ ]*pixels.*", "", line)
-                wh = line.strip().split("x")
-                return (int(wh[0]), int(wh[1]))
 
 
 def video_capture_line(fps, x, y, height, width, output_path):
@@ -99,6 +77,69 @@ def mux_line(video_path, audio_path, output_path):
             str(output_path)]
 
 
+def get_desktop_resolution():
+    """ Returns the resolution of the desktop as a tuple.
+    """
+    if have_tk:
+        # Use tk to get the desktop resolution if we have it
+        root = Tkinter.Tk()
+        width = root.winfo_screenwidth()
+        height = root.winfo_screenheight()
+        root.destroy()
+        return (width, height)
+    else:
+        # Otherwise call xdpyinfo and parse its output
+        try:
+            proc = subprocess.Popen("xdpyinfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except OSError:
+            return None
+        out, err = proc.communicate()
+        lines = out.split("\n")
+        for line in lines:
+            if "dimensions" in line:
+                line = re.sub(".*dimensions:[ ]*", "", line)
+                line = re.sub("[ ]*pixels.*", "", line)
+                wh = line.strip().split("x")
+                return (int(wh[0]), int(wh[1]))
+
+
+def get_window_position_and_size():
+    """ Prompts the user to click on a window, and returns the window's
+        position and size.
+    """
+    try:
+        proc = subprocess.Popen("xwininfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
+        return None
+    out, err = proc.communicate()
+    lines = out.split("\n")
+    x = 0
+    y = 0
+    w = 0
+    h = 0
+    xt = False
+    yt = False
+    wt = False
+    ht = False
+    for line in lines:
+        if "Absolute upper-left X:" in line:
+            x = int(re.sub("[^0-9]", "", line))
+            xt = True
+        elif "Absolute upper-left Y:" in line:
+            y = int(re.sub("[^0-9]", "", line))
+            yt = True
+        elif "Width:" in line:
+            w = int(re.sub("[^0-9]", "", line))
+            wt = True
+        elif "Height:" in line:
+            h = int(re.sub("[^0-9]", "", line))
+            ht = True
+    if xt and yt and wt and ht:
+        return (x, y, w, h)
+    else:
+        return None
+
+
 def random_id(length = 8):
     """ Generates a random alphanumeric id string.
     """
@@ -115,42 +156,42 @@ def random_id(length = 8):
 
 def get_default_output_path():
     """ Creates a default output file path.
-        Pattern: out_####.avi
+        Pattern: out_####.ext
     """
-    filenames = glob.glob("out_????.avi")
+    filenames = glob.glob("out_????" + DEFAULT_FILE_EXTENSION)
     for i in range(1, 9999):
-        name = "out_" + str(i).rjust(4,'0') + ".avi"
+        name = "out_" + str(i).rjust(4,'0') + DEFAULT_FILE_EXTENSION
         tally = 0
         for f in filenames:
             if f == name:
                 tally += 1
         if tally == 0:
             return name
-    return "out_9999.avi"
+    return "out_9999" + DEFAULT_FILE_EXTENSION
 
 
 if __name__ == "__main__":
     # Set up default file paths
-    tmp_path = tempfile.gettempdir() + "/" + tempfile.gettempprefix() + "_" + random_id()
+    tmp_path = tempfile.gettempdir() + "/" + tempfile.gettempprefix() + "_" + random_id(16)
     tmp_vpath = os.path.normpath(tmp_path + ".avi")
     tmp_apath = os.path.normpath(tmp_path + ".wav")
     out_path = get_default_output_path()
 
     # Parse command line arguments
     #parser = optparse.OptionParser(usage=USAGE_MESSAGE)
-    parser = optparse.OptionParser(usage="%prog [options] [output_file.avi]")
-    parser.add_option("-w", "--use-window", action="store_true", dest="use_window",
+    parser = optparse.OptionParser(usage="%prog [options] [output_file" + DEFAULT_FILE_EXTENSION + "]")
+    parser.add_option("-w", "--capture-window", action="store_true", dest="capture_window",
                       default=False,
-                      help="select a window to record")
+                      help="prompt user to click on a window to capture")
     parser.add_option("-r", "--fps", dest="fps",
                       type="int", default=15,
-                      help="frame rate to capture video at")
+                      help="frame rate to capture video at. Default: 15")
     parser.add_option("-p", "--position", dest="xy", metavar="XxY",
                       type="string", default=None,
-                      help="upper left corner of the capture area in pixels from the upper left of the screen (e.g. 50x64)")
+                      help="upper left corner of the capture area (in pixels from the upper left of the screen). Default: 0x0")
     parser.add_option("-s", "--size", dest="size",
                       type="string", default=None, metavar="WIDTHxHEIGHT",
-                      help="resolution of the capture area in pixels (e.g. 1280x720)")
+                      help="resolution of the capture area (in pixels). Default: entire desktop")
     parser.add_option("--crop-top", dest="crop_top",
                       type="int", default=0,
                       help="number of pixels to crop off the top of the capture area")
@@ -168,11 +209,8 @@ if __name__ == "__main__":
     # Output file path
     if len(args) >= 1:
         out_path = args[0]
-        if not out_path.endswith(".avi") and \
-           not out_path.endswith(".mov") and \
-           not out_path.endswith(".mkv") and \
-           not out_path.endswith(".ogv"):
-            out_path += ".avi"
+        if out_path[-4:] not in ACCEPTABLE_FILE_EXTENSIONS:
+            out_path += DEFAULT_FILE_EXTENSION
 
     # Get desktop resolution
     try:
@@ -181,31 +219,47 @@ if __name__ == "__main__":
         print "Error: unable to determine desktop resolution."
         raise
 
-    # Default capture values
+    # Capture values
     fps = opts.fps
-
-    if opts.xy:
-        xy = opts.xy.split("x")
-        x = int(xy[0])
-        y = int(xy[1])
+    if opts.capture_window:
+        print "Please click on a window to capture."
+        x, y, width, height = get_window_position_and_size()
     else:
-        x = 0
-        y = 0
+        if opts.xy:
+            if re.match("^[0-9]*x[0-9]*$", opts.xy.strip()):
+                xy = opts.xy.strip().split("x")
+                x = int(xy[0])
+                y = int(xy[1])
+            else:
+                raise parser.error("position option must be of form XxY (e.g. 50x64)")
+        else:
+            x = 0
+            y = 0
 
-    if opts.size:
-        size = opts.size.split("x")
-        width = int(size[0])
-        height = int(size[1])
-    else:
-        width = dres[0]
-        height = dres[1]
-
+        if opts.size:
+            if re.match("^[0-9]*x[0-9]*$", opts.size.strip()):
+                size = opts.size.strip().split("x")
+                width = int(size[0])
+                height = int(size[1])
+            else:
+                raise parser.error("size option must be of form HxW (e.g. 1280x720)")
+        else:
+            width = dres[0]
+            height = dres[1]
 
     # Calculate cropping
     width -= opts.crop_left + opts.crop_right
     height -= opts.crop_top + opts.crop_bottom
     x += opts.crop_left
     y += opts.crop_top
+
+    # Make sure width and height are divisible by 2, as requred by h264
+    width -= width % 2
+    height -= height % 2
+
+    # Verify that capture area is on screen
+    if (x + width) > dres[0] or (y + height) > dres[1]:
+        parser.error("specified capture area is off screen.")
 
     # Capture audio and video to temporary files
     with open(os.devnull, 'w') as devnull:
