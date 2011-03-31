@@ -1,19 +1,24 @@
 #!/usr/bin/env python
 
+""" A simple screen-capture utility.  Utilizes ffmpeg with h264 support.
+By default it captures the entire desktop.
+"""
+
+# Easy-to-change defaults for users
+DEFAULT_FPS = 15
+DEFAULT_FILE_EXTENSION = ".avi"
+ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
+
+
 import os
 import os.path
 import glob
 import time
 import random
-import sys
 import tempfile
 import optparse
 import subprocess
 import re
-
-DEFAULT_FILE_EXTENSION = ".avi"
-ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
-
 
 # Optional packages
 have_tk = False
@@ -184,8 +189,8 @@ if __name__ == "__main__":
                       default=False,
                       help="prompt user to click on a window to capture")
     parser.add_option("-r", "--fps", dest="fps",
-                      type="int", default=15,
-                      help="frame rate to capture video at. Default: 15")
+                      type="int", default=DEFAULT_FPS,
+                      help="frame rate to capture video at. Default: " + str(DEFAULT_FPS))
     parser.add_option("-p", "--position", dest="xy", metavar="XxY",
                       type="string", default=None,
                       help="upper left corner of the capture area (in pixels from the upper left of the screen). Default: 0x0")
