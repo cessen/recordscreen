@@ -74,12 +74,18 @@ def mux_line(video_path, audio_path, output_path):
     """ Returns the command line to mux audio and video, in a list form
         compatible with Popen.
     """
-    return ["ffmpeg",
-            "-i", str(video_path),
-            "-i", str(audio_path),
-            "-vcodec", "copy",
-            "-acodec", "copy",
-            str(output_path)]
+    if audio_path:
+        return ["ffmpeg",
+                "-i", str(video_path),
+                "-i", str(audio_path),
+                "-vcodec", "copy",
+                "-acodec", "copy",
+                str(output_path)]
+    else:
+        return ["ffmpeg",
+                "-i", str(video_path),
+                "-vcodec", "copy",
+                str(output_path)]
 
 
 def get_desktop_resolution():
@@ -188,6 +194,9 @@ if __name__ == "__main__":
     parser.add_option("-w", "--capture-window", action="store_true", dest="capture_window",
                       default=False,
                       help="prompt user to click on a window to capture")
+    parser.add_option("-n", "--no-audio", action="store_true", dest="no_audio",
+                      default=False,
+                      help="don't capture audio")
     parser.add_option("-r", "--fps", dest="fps",
                       type="int", default=DEFAULT_FPS,
                       help="frame rate to capture video at. Default: " + str(DEFAULT_FPS))
@@ -268,16 +277,24 @@ if __name__ == "__main__":
 
     # Capture audio and video to temporary files
     with open(os.devnull, 'w') as devnull:
-        a = subprocess.Popen(audio_capture_line(tmp_apath), stdout=devnull, stdin=devnull, stderr=devnull)
+        if not opts.no_audio:
+            a = subprocess.Popen(audio_capture_line(tmp_apath), stdout=devnull, stdin=devnull, stderr=devnull)
         v = subprocess.Popen(video_capture_line(fps, x, y, width, height, tmp_vpath)).wait()
-        a.terminate()
+        if not opts.no_audio:
+            a.terminate()
 
     # Mux audio and video into final output file
     print "Starting muxing..."
     time.sleep(1)
-    m = subprocess.Popen(mux_line(tmp_vpath, tmp_apath, out_path)).wait()
+    if os.path.exists(tmp_apath):
+        m = subprocess.Popen(mux_line(tmp_vpath, tmp_apath, out_path)).wait()
+    else:
+        subprocess.Popen(mux_line(tmp_vpath, None, out_path)).wait()
+        if not opts.no_audio:
+            print "\nWARNING: failed to capture audio."
 
     # Remove temporary files
     os.remove(tmp_vpath)
-    os.remove(tmp_apath)
+    if os.path.exists(tmp_apath):
+        os.remove(tmp_apath)
 
