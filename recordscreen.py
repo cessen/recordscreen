@@ -36,6 +36,30 @@ except ImportError:
     pass
 
 
+def capture_line(fps, x, y, height, width, output_path):
+    """ Returns the command line to capture video+audio, in a list form
+        compatible with Popen.
+    """
+    threads = 2
+    if have_multiproc:
+        # Detect the number of threads we have available
+        threads = multiprocessing.cpu_count()
+    return ["ffmpeg",
+            "-f", "alsa",
+            "-ac", "2",
+            "-i", "pulse",
+            "-f", "x11grab",
+            "-r", str(fps),
+            "-s", "%dx%d" % (int(height), int(width)),
+            "-i", ":0.0+%d,%d" % (int(x), int(y)),
+            "-acodec", "pcm_s16le",
+            "-ab", "192k",
+            "-vcodec", "libx264",
+            "-vpre", "lossless_ultrafast",
+            "-threads", str(threads),
+            str(output_path)]
+
+
 def video_capture_line(fps, x, y, height, width, output_path):
     """ Returns the command line to capture video, in a list form
         compatible with Popen.
@@ -50,7 +74,6 @@ def video_capture_line(fps, x, y, height, width, output_path):
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
             "-i", ":0.0+%d,%d" % (int(x), int(y)),
-            "-sameq",
             "-vcodec", "libx264",
             "-vpre", "lossless_ultrafast",
             "-threads", str(threads),
@@ -65,8 +88,8 @@ def audio_capture_line(output_path):
             "-f", "alsa",
             "-ac", "2",
             "-i", "pulse",
-            "-b", "192k",
-            "-threads", "1",
+            "-acodec", "pcm_s16le",
+            "-ab", "192k",
             str(output_path)]
 
 
@@ -151,20 +174,6 @@ def get_window_position_and_size():
         return None
 
 
-def random_id(length = 8):
-    """ Generates a random alphanumeric id string.
-    """
-    tlength = int(length / 2)
-    rlength = int(length / 2) + int(length % 2)
-
-    chars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-    text = ""
-    for i in range(0, rlength):
-        text += random.choice(chars)
-    text += str(hex(int(time.time())))[2:][-tlength:].rjust(tlength, '0')[::-1]
-    return text
-
-
 def get_default_output_path():
     """ Creates a default output file path.
         Pattern: out_####.ext
@@ -182,10 +191,7 @@ def get_default_output_path():
 
 
 if __name__ == "__main__":
-    # Set up default file paths
-    tmp_path = tempfile.gettempdir() + "/" + tempfile.gettempprefix() + "_" + random_id(16)
-    tmp_vpath = os.path.normpath(tmp_path + ".avi")
-    tmp_apath = os.path.normpath(tmp_path + ".wav")
+    # Set up default file path
     out_path = get_default_output_path()
 
     # Parse command line arguments
@@ -275,26 +281,11 @@ if __name__ == "__main__":
     if (x + width) > dres[0] or (y + height) > dres[1]:
         parser.error("specified capture area is off screen.")
 
-    # Capture audio and video to temporary files
-    with open(os.devnull, 'w') as devnull:
-        if not opts.no_audio:
-            a = subprocess.Popen(audio_capture_line(tmp_apath), stdout=devnull, stdin=devnull, stderr=devnull)
-        v = subprocess.Popen(video_capture_line(fps, x, y, width, height, tmp_vpath)).wait()
-        if not opts.no_audio:
-            a.terminate()
-
-    # Mux audio and video into final output file
-    print "Starting muxing..."
-    time.sleep(1)
-    if os.path.exists(tmp_apath):
-        m = subprocess.Popen(mux_line(tmp_vpath, tmp_apath, out_path)).wait()
+    # Capture!
+    if not opts.no_audio:
+        proc = subprocess.Popen(capture_line(fps, x, y, width, height, out_path)).wait()
     else:
-        subprocess.Popen(mux_line(tmp_vpath, None, out_path)).wait()
-        if not opts.no_audio:
-            print "\nWARNING: failed to capture audio."
+        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, out_path)).wait()
 
-    # Remove temporary files
-    os.remove(tmp_vpath)
-    if os.path.exists(tmp_apath):
-        os.remove(tmp_apath)
+    print "Done!"
 
