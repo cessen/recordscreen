@@ -36,7 +36,7 @@ except ImportError:
     pass
 
 
-def capture_line(fps, x, y, height, width, output_path):
+def capture_line(fps, x, y, height, width, display_device, audio_device, output_path):
     """ Returns the command line to capture video+audio, in a list form
         compatible with Popen.
     """
@@ -47,11 +47,11 @@ def capture_line(fps, x, y, height, width, output_path):
     return ["ffmpeg",
             "-f", "alsa",
             "-ac", "2",
-            "-i", "pulse",
+            "-i", str(audio_device),
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
-            "-i", ":0.0+%d,%d" % (int(x), int(y)),
+            "-i", display_device + "+" + str(x) + "," + str(y),
             "-acodec", "pcm_s16le",
             "-ab", "192k",
             "-vcodec", "libx264",
@@ -60,7 +60,7 @@ def capture_line(fps, x, y, height, width, output_path):
             str(output_path)]
 
 
-def video_capture_line(fps, x, y, height, width, output_path):
+def video_capture_line(fps, x, y, height, width, display_device, output_path):
     """ Returns the command line to capture video, in a list form
         compatible with Popen.
     """
@@ -73,21 +73,21 @@ def video_capture_line(fps, x, y, height, width, output_path):
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
-            "-i", ":0.0+%d,%d" % (int(x), int(y)),
+            "-i", display_device + "+" + str(x) + "," + str(y),
             "-vcodec", "libx264",
             "-vpre", "lossless_ultrafast",
             "-threads", str(threads),
             str(output_path)]
 
 
-def audio_capture_line(output_path):
+def audio_capture_line(audio_device, output_path):
     """ Returns the command line to capture audio, in a list form
         compatible with Popen.
     """
     return ["ffmpeg",
             "-f", "alsa",
             "-ac", "2",
-            "-i", "pulse",
+            "-i", str(audio_device),
             "-acodec", "pcm_s16le",
             "-ab", "192k",
             str(output_path)]
@@ -224,7 +224,14 @@ if __name__ == "__main__":
     parser.add_option("--crop-right", dest="crop_right",
                       type="int", default=0,
                       help="number of pixels to crop off the right of the capture area")
+    parser.add_option("-a", "--audio-device", dest="audio_device",
+                      default="pulse",
+                      help="the audio device to capture from (eg. hw:0).  Default: pulse")
+    parser.add_option("-d", "--display-device", dest="display_device",
+                      default=":0.0",
+                      help="the display device to capture from (eg. :0.0).  Default: :0.0")
     opts, args = parser.parse_args()
+
 
     # Output file path
     if len(args) >= 1:
@@ -283,9 +290,9 @@ if __name__ == "__main__":
 
     # Capture!
     if not opts.no_audio:
-        proc = subprocess.Popen(capture_line(fps, x, y, width, height, out_path)).wait()
+        proc = subprocess.Popen(capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, out_path)).wait()
     else:
-        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, out_path)).wait()
+        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, out_path)).wait()
 
     print "Done!"
 
