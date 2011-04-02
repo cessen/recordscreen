@@ -44,19 +44,17 @@ import subprocess
 import re
 
 # Optional packages
-have_tk = False
 try:
     import Tkinter
     have_tk = True
 except ImportError:
-    pass
+    have_tk = False
 
-have_multiproc = False
 try:
     import multiprocessing
     have_multiproc = True
 except ImportError:
-    pass
+    have_multiproc = False
 
 
 def capture_line(fps, x, y, height, width, display_device, audio_device, output_path):
@@ -84,7 +82,7 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, output_
 
 
 def video_capture_line(fps, x, y, height, width, display_device, output_path):
-    """ Returns the command line to capture video, in a list form
+    """ Returns the command line to capture video (no audio), in a list form
         compatible with Popen.
     """
     threads = 2
@@ -104,7 +102,7 @@ def video_capture_line(fps, x, y, height, width, display_device, output_path):
 
 
 def audio_capture_line(audio_device, output_path):
-    """ Returns the command line to capture audio, in a list form
+    """ Returns the command line to capture audio (no video), in a list form
         compatible with Popen.
     """
     return ["ffmpeg",
@@ -114,24 +112,6 @@ def audio_capture_line(audio_device, output_path):
             "-acodec", "pcm_s16le",
             "-ab", "192k",
             str(output_path)]
-
-
-def mux_line(video_path, audio_path, output_path):
-    """ Returns the command line to mux audio and video, in a list form
-        compatible with Popen.
-    """
-    if audio_path:
-        return ["ffmpeg",
-                "-i", str(video_path),
-                "-i", str(audio_path),
-                "-vcodec", "copy",
-                "-acodec", "copy",
-                str(output_path)]
-    else:
-        return ["ffmpeg",
-                "-i", str(video_path),
-                "-vcodec", "copy",
-                str(output_path)]
 
 
 def get_desktop_resolution():
@@ -218,7 +198,6 @@ if __name__ == "__main__":
     out_path = get_default_output_path()
 
     # Parse command line arguments
-    #parser = optparse.OptionParser(usage=USAGE_MESSAGE)
     parser = optparse.OptionParser(usage="%prog [options] [output_file" + DEFAULT_FILE_EXTENSION + "]")
     parser.add_option("-w", "--capture-window", action="store_true", dest="capture_window",
                       default=False,
