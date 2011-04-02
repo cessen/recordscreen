@@ -4,11 +4,34 @@
 By default it captures the entire desktop.
 """
 
+################################ LICENSE BLOCK ################################
+# Copyright (c) 2011 Nathan Vegdahl
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+###############################################################################
+
 # Easy-to-change defaults for users
 DEFAULT_FPS = 15
 DEFAULT_FILE_EXTENSION = ".avi"
 ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
-
+DEFAULT_CAPTURE_AUDIO_DEVICE = "pulse"
+DEFAULT_CAPTURE_DISPLAY_DEVICE = ":0.0"
 
 import os
 import os.path
@@ -225,11 +248,11 @@ if __name__ == "__main__":
                       type="int", default=0,
                       help="number of pixels to crop off the right of the capture area")
     parser.add_option("-a", "--audio-device", dest="audio_device",
-                      default="pulse",
-                      help="the audio device to capture from (eg. hw:0).  Default: pulse")
+                      default=DEFAULT_CAPTURE_AUDIO_DEVICE,
+                      help="the audio device to capture from (eg. hw:0).  Default: " + DEFAULT_CAPTURE_AUDIO_DEVICE)
     parser.add_option("-d", "--display-device", dest="display_device",
-                      default=":0.0",
-                      help="the display device to capture from (eg. :0.0).  Default: :0.0")
+                      default=DEFAULT_CAPTURE_DISPLAY_DEVICE,
+                      help="the display device to capture from (eg. :0.0).  Default: " + DEFAULT_CAPTURE_DISPLAY_DEVICE)
     opts, args = parser.parse_args()
 
 
