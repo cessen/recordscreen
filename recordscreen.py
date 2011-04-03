@@ -32,6 +32,8 @@ DEFAULT_FILE_EXTENSION = ".avi"
 ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
 DEFAULT_CAPTURE_AUDIO_DEVICE = "pulse"
 DEFAULT_CAPTURE_DISPLAY_DEVICE = ":0.0"
+DEFAULT_AUDIO_CODEC = "pcm"
+DEFAULT_VIDEO_CODEC = "h264"
 
 import os
 import os.path
@@ -57,7 +59,24 @@ except ImportError:
     have_multiproc = False
 
 
-def capture_line(fps, x, y, height, width, display_device, audio_device, output_path):
+# Video codec lines
+vcodecs = {}
+vcodecs["h264"] = ["-vcodec", "libx264", "-vpre", "lossless_ultrafast"]
+vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-b", "40000kb"]
+#vcodecs["xvid"] = ["-vcodec", "libxvid", "-b", "40000kb"]
+vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
+#vcodecs["theora"] = ["-vcodec", "libtheora", "-b", "40000kb"]
+
+# Audio codec lines
+acodecs = {}
+acodecs["pcm"] = ["-acodec", "pcm_s16le"]
+#acodecs["flac"] = ["-acodec", "flac", "-ab", "192kb"]
+#acodecs["vorbis"] = ["-acodec", "libvorbis", "-ab", "192k"]
+acodecs["mp3"] = ["-acodec", "libmp3lame", "-ab", "192k"]
+acodecs["aac"] = ["-acodec", "libfaac", "-ab", "192k"]
+
+
+def capture_line(fps, x, y, height, width, display_device, audio_device, video_codec, audio_codec, output_path):
     """ Returns the command line to capture video+audio, in a list form
         compatible with Popen.
     """
@@ -65,23 +84,21 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, output_
     if have_multiproc:
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
-    return ["ffmpeg",
+    line = ["ffmpeg",
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device),
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
-            "-i", display_device + "+" + str(x) + "," + str(y),
-            "-acodec", "pcm_s16le",
-            "-ab", "192k",
-            "-vcodec", "libx264",
-            "-vpre", "lossless_ultrafast",
-            "-threads", str(threads),
-            str(output_path)]
+            "-i", display_device + "+" + str(x) + "," + str(y)]
+    line += acodecs[audio_codec]
+    line += vcodecs[video_codec]
+    line += ["-threads", str(threads), str(output_path)]
+    return line
 
 
-def video_capture_line(fps, x, y, height, width, display_device, output_path):
+def video_capture_line(fps, x, y, height, width, display_device, video_codec, output_path):
     """ Returns the command line to capture video (no audio), in a list form
         compatible with Popen.
     """
@@ -90,28 +107,27 @@ def video_capture_line(fps, x, y, height, width, display_device, output_path):
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
 
-    return ["ffmpeg",
+    line = ["ffmpeg",
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
-            "-i", display_device + "+" + str(x) + "," + str(y),
-            "-vcodec", "libx264",
-            "-vpre", "lossless_ultrafast",
-            "-threads", str(threads),
-            str(output_path)]
+            "-i", display_device + "+" + str(x) + "," + str(y)]
+    line += vcodecs[video_codec]
+    line += ["-threads", str(threads), str(output_path)]
+    return line
 
 
-def audio_capture_line(audio_device, output_path):
+def audio_capture_line(audio_device, audio_codec, output_path):
     """ Returns the command line to capture audio (no video), in a list form
         compatible with Popen.
     """
-    return ["ffmpeg",
+    line = ["ffmpeg",
             "-f", "alsa",
             "-ac", "2",
-            "-i", str(audio_device),
-            "-acodec", "pcm_s16le",
-            "-ab", "192k",
-            str(output_path)]
+            "-i", str(audio_device)]
+    line += acodecs[audio_codec]
+    line += [str(output_path)]
+    return line
 
 
 def get_desktop_resolution():
@@ -193,6 +209,26 @@ def get_default_output_path():
     return "out_9999" + DEFAULT_FILE_EXTENSION
 
 
+def print_codecs():
+    """ Prints a list of the available audio/video codecs.
+    """
+    a = []
+    v = []
+    for i in acodecs:
+        a += [i]
+    for i in vcodecs:
+        v += [i]
+    a.sort()
+    v.sort()
+
+    print "Audio codecs:"
+    for i in a:
+        print "  " + str(i)
+
+    print "Video codecs:"
+    for i in vcodecs:
+        print "  " + str(i)
+
 if __name__ == "__main__":
     # Set up default file path
     out_path = get_default_output_path()
@@ -232,8 +268,22 @@ if __name__ == "__main__":
     parser.add_option("-d", "--display-device", dest="display_device",
                       default=DEFAULT_CAPTURE_DISPLAY_DEVICE,
                       help="the display device to capture from (eg. :0.0).  Default: " + DEFAULT_CAPTURE_DISPLAY_DEVICE)
+    parser.add_option("--acodec", dest="acodec",
+                      default=DEFAULT_AUDIO_CODEC,
+                      help="the audio codec to encode with.  Default: " + DEFAULT_AUDIO_CODEC)
+    parser.add_option("--vcodec", dest="vcodec",
+                      default=DEFAULT_VIDEO_CODEC,
+                      help="the video codec to encode with.  Default: " + DEFAULT_VIDEO_CODEC)
+    parser.add_option("--codecs", action="store_true", dest="list_codecs",
+                      default=False,
+                      help="display the available audio and video codecs")
+
     opts, args = parser.parse_args()
 
+    # Print list of codecs, if requested
+    if opts.list_codecs:
+        print_codecs()
+        exit(0)
 
     # Output file path
     if len(args) >= 1:
@@ -282,9 +332,11 @@ if __name__ == "__main__":
     x += opts.crop_left
     y += opts.crop_top
 
-    # Make sure width and height are divisible by 2, as requred by h264
-    width -= width % 2
-    height -= height % 2
+    # Make sure the capture resolution conforms to the restrictions
+    # of the video codec.  Crop to conform, if necessary.
+    mults = {"h264": 2, "mpeg4": 2, "xvid": 2, "theora": 8, "huffyuv": 2}
+    width -= width % mults[opts.vcodec]
+    height -= height % mults[opts.vcodec]
 
     # Verify that capture area is on screen
     if (x + width) > dres[0] or (y + height) > dres[1]:
@@ -292,9 +344,9 @@ if __name__ == "__main__":
 
     # Capture!
     if not opts.no_audio:
-        proc = subprocess.Popen(capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, out_path)).wait()
+        proc = subprocess.Popen(capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, opts.vcodec, opts.acodec, out_path)).wait()
     else:
-        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, out_path)).wait()
+        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, opts.vcodec, out_path)).wait()
 
     print "Done!"
 
