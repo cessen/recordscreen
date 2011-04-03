@@ -66,6 +66,7 @@ vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-b", "40000kb"]
 #vcodecs["xvid"] = ["-vcodec", "libxvid", "-b", "40000kb"]
 vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
 #vcodecs["theora"] = ["-vcodec", "libtheora", "-b", "40000kb"]
+#vcodecs["dirac"] = ["-vcodec", "libschroedinger", "-b", "40000kb"]
 
 # Audio codec lines
 acodecs = {}
@@ -334,7 +335,7 @@ if __name__ == "__main__":
 
     # Make sure the capture resolution conforms to the restrictions
     # of the video codec.  Crop to conform, if necessary.
-    mults = {"h264": 2, "mpeg4": 2, "xvid": 2, "theora": 8, "huffyuv": 2}
+    mults = {"h264": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2}
     width -= width % mults[opts.vcodec]
     height -= height % mults[opts.vcodec]
 
