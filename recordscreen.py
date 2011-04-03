@@ -61,7 +61,8 @@ except ImportError:
 
 # Video codec lines
 vcodecs = {}
-vcodecs["h264"] = ["-vcodec", "libx264", "-vpre", "lossless_ultrafast"]
+vcodecs["h264"] = ["-vcodec", "libx264", "-vpre", "lossless_medium"]
+vcodecs["h264_fast"] = ["-vcodec", "libx264", "-vpre", "lossless_ultrafast"]
 vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-b", "40000kb"]
 #vcodecs["xvid"] = ["-vcodec", "libxvid", "-b", "40000kb"]
 vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
@@ -335,7 +336,7 @@ if __name__ == "__main__":
 
     # Make sure the capture resolution conforms to the restrictions
     # of the video codec.  Crop to conform, if necessary.
-    mults = {"h264": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2}
+    mults = {"h264": 2, "h264_fast": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2}
     width -= width % mults[opts.vcodec]
     height -= height % mults[opts.vcodec]
 
