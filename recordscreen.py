@@ -32,7 +32,7 @@ DEFAULT_FILE_EXTENSION = ".avi"
 ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
 DEFAULT_CAPTURE_AUDIO_DEVICE = "pulse"
 DEFAULT_CAPTURE_DISPLAY_DEVICE = ":0.0"
-DEFAULT_AUDIO_CODEC = "pcm"
+DEFAULT_AUDIO_CODEC = "mp3"
 DEFAULT_VIDEO_CODEC = "h264"
 
 import os
@@ -72,10 +72,10 @@ vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
 # Audio codec lines
 acodecs = {}
 acodecs["pcm"] = ["-acodec", "pcm_s16le"]
-#acodecs["flac"] = ["-acodec", "flac", "-ab", "192kb"]
-#acodecs["vorbis"] = ["-acodec", "libvorbis", "-ab", "192k"]
-acodecs["mp3"] = ["-acodec", "libmp3lame", "-ab", "192k"]
-acodecs["aac"] = ["-acodec", "libfaac", "-ab", "192k"]
+#acodecs["flac"] = ["-acodec", "flac"]
+#acodecs["vorbis"] = ["-acodec", "libvorbis", "-ab", "320k"]
+acodecs["mp3"] = ["-acodec", "libmp3lame", "-ab", "320k"]
+acodecs["aac"] = ["-acodec", "libfaac", "-ab", "320k"]
 
 
 def capture_line(fps, x, y, height, width, display_device, audio_device, video_codec, audio_codec, output_path):
