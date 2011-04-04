@@ -63,7 +63,7 @@ except ImportError:
 vcodecs = {}
 vcodecs["h264"] = ["-vcodec", "libx264", "-vpre", "lossless_medium"]
 vcodecs["h264_fast"] = ["-vcodec", "libx264", "-vpre", "lossless_ultrafast"]
-vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-b", "40000kb"]
+vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-qmax", "1", "-qmin", "1"]
 #vcodecs["xvid"] = ["-vcodec", "libxvid", "-b", "40000kb"]
 vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
 vcodecs["vp8"] = ["-vcodec", "libvpx", "-qmax", "2", "-qmin", "1"]
