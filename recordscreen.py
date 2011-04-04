@@ -28,11 +28,11 @@ By default it captures the entire desktop.
 
 # Easy-to-change defaults for users
 DEFAULT_FPS = 15
-DEFAULT_FILE_EXTENSION = ".avi"
+DEFAULT_FILE_EXTENSION = ".mkv"
 ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
 DEFAULT_CAPTURE_AUDIO_DEVICE = "pulse"
 DEFAULT_CAPTURE_DISPLAY_DEVICE = ":0.0"
-DEFAULT_AUDIO_CODEC = "mp3"
+DEFAULT_AUDIO_CODEC = "vorbis"
 DEFAULT_VIDEO_CODEC = "h264"
 
 import os
@@ -66,14 +66,15 @@ vcodecs["h264_fast"] = ["-vcodec", "libx264", "-vpre", "lossless_ultrafast"]
 vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-b", "40000kb"]
 #vcodecs["xvid"] = ["-vcodec", "libxvid", "-b", "40000kb"]
 vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
-#vcodecs["theora"] = ["-vcodec", "libtheora", "-b", "40000kb"]
+vcodecs["vp8"] = ["-vcodec", "libvpx", "-qmax", "2", "-qmin", "1"]
+vcodecs["theora"] = ["-vcodec", "libtheora", "-b", "40000kb"]
 #vcodecs["dirac"] = ["-vcodec", "libschroedinger", "-b", "40000kb"]
 
 # Audio codec lines
 acodecs = {}
 acodecs["pcm"] = ["-acodec", "pcm_s16le"]
 #acodecs["flac"] = ["-acodec", "flac"]
-#acodecs["vorbis"] = ["-acodec", "libvorbis", "-ab", "320k"]
+acodecs["vorbis"] = ["-acodec", "libvorbis", "-ab", "320k"]
 acodecs["mp3"] = ["-acodec", "libmp3lame", "-ab", "320k"]
 acodecs["aac"] = ["-acodec", "libfaac", "-ab", "320k"]
 
@@ -336,7 +337,7 @@ if __name__ == "__main__":
 
     # Make sure the capture resolution conforms to the restrictions
     # of the video codec.  Crop to conform, if necessary.
-    mults = {"h264": 2, "h264_fast": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2}
+    mults = {"h264": 2, "h264_fast": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "vp8": 1}
     width -= width % mults[opts.vcodec]
     height -= height % mults[opts.vcodec]
 
