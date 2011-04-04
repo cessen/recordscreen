@@ -33,7 +33,7 @@ ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
 DEFAULT_CAPTURE_AUDIO_DEVICE = "pulse"
 DEFAULT_CAPTURE_DISPLAY_DEVICE = ":0.0"
 DEFAULT_AUDIO_CODEC = "vorbis"
-DEFAULT_VIDEO_CODEC = "h264"
+DEFAULT_VIDEO_CODEC = "h264_fast"
 
 import os
 import os.path
