@@ -36,6 +36,7 @@ DEFAULT_AUDIO_CODEC = "vorbis"
 DEFAULT_VIDEO_CODEC = "h264_fast"
 
 import os
+import sys
 import os.path
 import glob
 import time
@@ -44,6 +45,10 @@ import tempfile
 import optparse
 import subprocess
 import re
+
+
+PYTHON_3 = (sys.version_info[0] == 3)
+
 
 # Optional packages
 try:
@@ -150,7 +155,10 @@ def get_desktop_resolution():
         except OSError:
             return None
         out, err = proc.communicate()
-        lines = out.split("\n")
+        if PYTHON_3:
+            lines = str(out).split("\\n")
+        else:
+            lines = out.split("\n")
         for line in lines:
             if "dimensions" in line:
                 line = re.sub(".*dimensions:[ ]*", "", line)
@@ -168,7 +176,10 @@ def get_window_position_and_size():
     except OSError:
         return None
     out, err = proc.communicate()
-    lines = out.split("\n")
+    if PYTHON_3:
+        lines = str(out).split("\\n")
+    else:
+        lines = out.split("\n")
     x = 0
     y = 0
     w = 0
@@ -224,13 +235,13 @@ def print_codecs():
     a.sort()
     v.sort()
 
-    print "Audio codecs:"
+    print("Audio codecs:")
     for i in a:
-        print "  " + str(i)
+        print("  " + str(i))
 
-    print "Video codecs:"
+    print("Video codecs:")
     for i in vcodecs:
-        print "  " + str(i)
+        print("  " + str(i))
 
 if __name__ == "__main__":
     # Set up default file path
@@ -298,13 +309,13 @@ if __name__ == "__main__":
     try:
         dres = get_desktop_resolution()
     except:
-        print "Error: unable to determine desktop resolution."
+        print("Error: unable to determine desktop resolution.")
         raise
 
     # Capture values
     fps = opts.fps
     if opts.capture_window:
-        print "Please click on a window to capture."
+        print("Please click on a window to capture.")
         x, y, width, height = get_window_position_and_size()
     else:
         if opts.xy:
@@ -351,5 +362,5 @@ if __name__ == "__main__":
     else:
         proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, opts.vcodec, out_path)).wait()
 
-    print "Done!"
+    print("Done!")
 
