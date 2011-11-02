@@ -28,12 +28,12 @@ By default it captures the entire desktop.
 
 # Easy-to-change defaults for users
 DEFAULT_FPS = 15
-DEFAULT_FILE_EXTENSION = ".mkv"
-ACCEPTABLE_FILE_EXTENSIONS = [".avi", ".mp4", ".mov", ".mkv", ".ogv"]
+DEFAULT_FILE_EXTENSION = "mkv"
+ACCEPTABLE_FILE_EXTENSIONS = ["avi", "mp4", "mov", "mkv", "ogv", "webm"]
 DEFAULT_CAPTURE_AUDIO_DEVICE = "pulse"
 DEFAULT_CAPTURE_DISPLAY_DEVICE = ":0.0"
-DEFAULT_AUDIO_CODEC = "vorbis"
-DEFAULT_VIDEO_CODEC = "h264_fast"
+DEFAULT_AUDIO_CODEC = "pcm"
+DEFAULT_VIDEO_CODEC = "h264_lossless"
 
 import os
 import sys
@@ -66,22 +66,22 @@ except ImportError:
 
 # Video codec lines
 vcodecs = {}
-vcodecs["h264"] = ["-vcodec", "libx264", "-vpre", "lossless_medium"]
-vcodecs["h264_fast"] = ["-vcodec", "libx264", "-vpre", "lossless_ultrafast"]
-vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-qmax", "1", "-qmin", "1"]
-#vcodecs["xvid"] = ["-vcodec", "libxvid", "-b", "40000kb"]
+vcodecs["h264_lossless"] = ["-vcodec", "libx264", "-preset", "ultrafast", "-g", "15", "-crf", "0", "-pix_fmt", "yuv444p"]
+vcodecs["h264"] = ["-vcodec", "libx264", "-vprofile", "baseline", "-preset", "ultrafast", "-g", "15", "-crf", "1", "-pix_fmt", "yuv420p"]
+vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-g", "15", "-qmax", "1", "-qmin", "1"]
+#vcodecs["xvid"] = ["-vcodec", "libxvid", "-g", "15", "-b:v", "40000k"]
 vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
-vcodecs["vp8"] = ["-vcodec", "libvpx", "-qmax", "2", "-qmin", "1"]
-vcodecs["theora"] = ["-vcodec", "libtheora", "-b", "40000kb"]
-#vcodecs["dirac"] = ["-vcodec", "libschroedinger", "-b", "40000kb"]
+vcodecs["vp8"] = ["-vcodec", "libvpx", "-g", "15", "-qmax", "1", "-qmin", "1"]
+vcodecs["theora"] = ["-vcodec", "libtheora", "-g", "15", "-b:v", "40000k"]
+#vcodecs["dirac"] = ["-vcodec", "libschroedinger", "-g", "15", "-b:v", "40000k"]
 
 # Audio codec lines
 acodecs = {}
 acodecs["pcm"] = ["-acodec", "pcm_s16le"]
 #acodecs["flac"] = ["-acodec", "flac"]
-acodecs["vorbis"] = ["-acodec", "libvorbis", "-ab", "320k"]
-acodecs["mp3"] = ["-acodec", "libmp3lame", "-ab", "320k"]
-acodecs["aac"] = ["-acodec", "libfaac", "-ab", "320k"]
+acodecs["vorbis"] = ["-acodec", "libvorbis", "-b:a", "320k"]
+acodecs["mp3"] = ["-acodec", "libmp3lame", "-b:a", "320k"]
+acodecs["aac"] = ["-acodec", "libfaac", "-b:a", "320k"]
 
 
 def capture_line(fps, x, y, height, width, display_device, audio_device, video_codec, audio_codec, output_path):
@@ -211,16 +211,16 @@ def get_default_output_path():
     """ Creates a default output file path.
         Pattern: out_####.ext
     """
-    filenames = glob.glob("out_????" + DEFAULT_FILE_EXTENSION)
+    filenames = glob.glob("out_????" + "." + DEFAULT_FILE_EXTENSION)
     for i in range(1, 9999):
-        name = "out_" + str(i).rjust(4,'0') + DEFAULT_FILE_EXTENSION
+        name = "out_" + str(i).rjust(4,'0') + "." + DEFAULT_FILE_EXTENSION
         tally = 0
         for f in filenames:
             if f == name:
                 tally += 1
         if tally == 0:
             return name
-    return "out_9999" + DEFAULT_FILE_EXTENSION
+    return "out_9999" + "." + DEFAULT_FILE_EXTENSION
 
 
 def print_codecs():
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     out_path = get_default_output_path()
 
     # Parse command line arguments
-    parser = optparse.OptionParser(usage="%prog [options] [output_file" + DEFAULT_FILE_EXTENSION + "]")
+    parser = optparse.OptionParser(usage="%prog [options] [output_file" + "." + DEFAULT_FILE_EXTENSION + "]")
     parser.add_option("-w", "--capture-window", action="store_true", dest="capture_window",
                       default=False,
                       help="prompt user to click on a window to capture")
@@ -302,8 +302,10 @@ if __name__ == "__main__":
     # Output file path
     if len(args) >= 1:
         out_path = args[0]
-        if out_path[-4:] not in ACCEPTABLE_FILE_EXTENSIONS:
-            out_path += DEFAULT_FILE_EXTENSION
+        exts = out_path.rsplit(".", 1)
+        
+        if len(exts) == 1 or exts[1] not in ACCEPTABLE_FILE_EXTENSIONS:
+            out_path += "." + DEFAULT_FILE_EXTENSION
 
     # Get desktop resolution
     try:
@@ -348,7 +350,7 @@ if __name__ == "__main__":
 
     # Make sure the capture resolution conforms to the restrictions
     # of the video codec.  Crop to conform, if necessary.
-    mults = {"h264": 2, "h264_fast": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "vp8": 1}
+    mults = {"h264": 2, "h264_lossless": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "vp8": 1}
     width -= width % mults[opts.vcodec]
     height -= height % mults[opts.vcodec]
 
