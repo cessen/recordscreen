@@ -32,8 +32,8 @@ DEFAULT_FILE_EXTENSION = "mkv"
 ACCEPTABLE_FILE_EXTENSIONS = ["avi", "mp4", "mov", "mkv", "ogv", "webm"]
 DEFAULT_CAPTURE_AUDIO_DEVICE = "pulse"
 DEFAULT_CAPTURE_DISPLAY_DEVICE = ":0.0"
-DEFAULT_AUDIO_CODEC = "pcm"
-DEFAULT_VIDEO_CODEC = "h264_lossless"
+DEFAULT_AUDIO_CODEC = "aac"
+DEFAULT_VIDEO_CODEC = "h264"
 
 import os
 import sys
@@ -66,22 +66,22 @@ except ImportError:
 
 # Video codec lines
 vcodecs = {}
-vcodecs["h264_lossless"] = ["-vcodec", "libx264", "-preset", "ultrafast", "-g", "15", "-crf", "0", "-pix_fmt", "yuv444p"]
-vcodecs["h264"] = ["-vcodec", "libx264", "-vprofile", "baseline", "-preset", "ultrafast", "-g", "15", "-crf", "1", "-pix_fmt", "yuv420p"]
-vcodecs["mpeg4"] = ["-vcodec", "mpeg4", "-g", "15", "-qmax", "1", "-qmin", "1"]
-#vcodecs["xvid"] = ["-vcodec", "libxvid", "-g", "15", "-b:v", "40000k"]
-vcodecs["huffyuv"] = ["-vcodec", "huffyuv"]
-vcodecs["vp8"] = ["-vcodec", "libvpx", "-g", "15", "-qmax", "1", "-qmin", "1"]
-vcodecs["theora"] = ["-vcodec", "libtheora", "-g", "15", "-b:v", "40000k"]
-#vcodecs["dirac"] = ["-vcodec", "libschroedinger", "-g", "15", "-b:v", "40000k"]
+vcodecs["h264_lossless"] = ["-c:v", "libx264", "-g", "15", "-crf", "0", "-pix_fmt", "yuv444p"]
+vcodecs["h264"] = ["-c:v", "libx264", "-vprofile", "baseline", "-g", "15", "-crf", "1", "-pix_fmt", "yuv420p"]
+vcodecs["mpeg4"] = ["-c:v", "mpeg4", "-g", "15", "-qmax", "1", "-qmin", "1"]
+#vcodecs["xvid"] = ["-c:v", "libxvid", "-g", "15", "-b:v", "40000k"]
+vcodecs["huffyuv"] = ["-c:v", "huffyuv"]
+vcodecs["vp8"] = ["-c:v", "libvpx", "-g", "15", "-qmax", "1", "-qmin", "1"]
+vcodecs["theora"] = ["-c:v", "libtheora", "-g", "15", "-b:v", "40000k"]
+#vcodecs["dirac"] = ["-c:v", "libschroedinger", "-g", "15", "-b:v", "40000k"]
 
 # Audio codec lines
 acodecs = {}
-acodecs["pcm"] = ["-acodec", "pcm_s16le"]
-#acodecs["flac"] = ["-acodec", "flac"]
-acodecs["vorbis"] = ["-acodec", "libvorbis", "-b:a", "320k"]
-acodecs["mp3"] = ["-acodec", "libmp3lame", "-b:a", "320k"]
-acodecs["aac"] = ["-acodec", "libfaac", "-b:a", "320k"]
+acodecs["pcm"] = ["-c:a", "pcm_s16le"]
+#acodecs["flac"] = ["-c:a", "flac"]
+acodecs["vorbis"] = ["-c:a", "libvorbis", "-b:a", "320k"]
+acodecs["mp3"] = ["-c:a", "libmp3lame", "-b:a", "320k"]
+acodecs["aac"] = ["-c:a", "libvo_aacenc", "-b:a", "320k"]
 
 
 def capture_line(fps, x, y, height, width, display_device, audio_device, video_codec, audio_codec, output_path):
@@ -92,7 +92,7 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
     if have_multiproc:
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
-    line = ["ffmpeg",
+    line = ["avconv",
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device),
@@ -115,7 +115,7 @@ def video_capture_line(fps, x, y, height, width, display_device, video_codec, ou
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
 
-    line = ["ffmpeg",
+    line = ["avconv",
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
@@ -129,7 +129,7 @@ def audio_capture_line(audio_device, audio_codec, output_path):
     """ Returns the command line to capture audio (no video), in a list form
         compatible with Popen.
     """
-    line = ["ffmpeg",
+    line = ["avconv",
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device)]
@@ -207,20 +207,20 @@ def get_window_position_and_size():
         return None
 
 
-def get_default_output_path():
+def get_default_output_path(ext=DEFAULT_FILE_EXTENSION):
     """ Creates a default output file path.
         Pattern: out_####.ext
     """
-    filenames = glob.glob("out_????" + "." + DEFAULT_FILE_EXTENSION)
+    filenames = glob.glob("out_????" + "." + ext)
     for i in range(1, 9999):
-        name = "out_" + str(i).rjust(4,'0') + "." + DEFAULT_FILE_EXTENSION
+        name = "out_" + str(i).rjust(4,'0') + "." + ext
         tally = 0
         for f in filenames:
             if f == name:
                 tally += 1
         if tally == 0:
             return name
-    return "out_9999" + "." + DEFAULT_FILE_EXTENSION
+    return "out_9999" + "." + ext
 
 
 def print_codecs():
@@ -244,9 +244,6 @@ def print_codecs():
         print("  " + str(i))
 
 if __name__ == "__main__":
-    # Set up default file path
-    out_path = get_default_output_path()
-
     # Parse command line arguments
     parser = optparse.OptionParser(usage="%prog [options] [output_file" + "." + DEFAULT_FILE_EXTENSION + "]")
     parser.add_option("-w", "--capture-window", action="store_true", dest="capture_window",
@@ -291,6 +288,9 @@ if __name__ == "__main__":
     parser.add_option("--codecs", action="store_true", dest="list_codecs",
                       default=False,
                       help="display the available audio and video codecs")
+    parser.add_option("--container", dest="container",
+                      default=DEFAULT_FILE_EXTENSION,
+                      help="the media container format to use if a filename is not given.  Specified by file extension.  Default: " + DEFAULT_FILE_EXTENSION)
 
     opts, args = parser.parse_args()
 
@@ -298,14 +298,22 @@ if __name__ == "__main__":
     if opts.list_codecs:
         print_codecs()
         exit(0)
+    
+    # Check that the container format specified is supported
+    if opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
+        print("" + opts.container + " is not a supported container format.")
+        exit(0)
 
-    # Output file path
+    # Set up default file path
+    out_path = get_default_output_path(ext=opts.container)
+
+    # Output file path specified on command line
     if len(args) >= 1:
         out_path = args[0]
         exts = out_path.rsplit(".", 1)
         
         if len(exts) == 1 or exts[1] not in ACCEPTABLE_FILE_EXTENSIONS:
-            out_path += "." + DEFAULT_FILE_EXTENSION
+            out_path += "." + opts.container
 
     # Get desktop resolution
     try:
