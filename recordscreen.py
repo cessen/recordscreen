@@ -92,7 +92,7 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
     if have_multiproc:
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
-    line = ["avconv",
+    line = [TOOL,
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device),
@@ -115,7 +115,7 @@ def video_capture_line(fps, x, y, height, width, display_device, video_codec, ou
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
 
-    line = ["avconv",
+    line = [TOOL,
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
@@ -129,7 +129,7 @@ def audio_capture_line(audio_device, audio_codec, output_path):
     """ Returns the command line to capture audio (no video), in a list form
         compatible with Popen.
     """
-    line = ["avconv",
+    line = [TOOL,
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device)]
@@ -243,6 +243,23 @@ def print_codecs():
     for i in vcodecs:
         print("  " + str(i))
 
+
+def check_tool(command):
+    try:
+        proc = subprocess.Popen([command, "-c:v", "huffyuv"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, err = proc.communicate()
+        if PYTHON_3:
+            lines = str(out).split("\\n")
+        else:
+            lines = out.split("\n")
+        for line in lines:
+            if "Unrecognized option" in line:
+                raise
+        return 1
+    except:
+        return 0
+
+
 if __name__ == "__main__":
     # Parse command line arguments
     parser = optparse.OptionParser(usage="%prog [options] [output_file" + "." + DEFAULT_FILE_EXTENSION + "]")
@@ -291,6 +308,8 @@ if __name__ == "__main__":
     parser.add_option("--container", dest="container",
                       default=DEFAULT_FILE_EXTENSION,
                       help="the media container format to use if a filename is not given.  Specified by file extension.  Default: " + DEFAULT_FILE_EXTENSION)
+    parser.add_option("--tool", dest="tool",
+                      help="capture and convertion tool to use (autodetected by default)")
 
     opts, args = parser.parse_args()
 
@@ -298,7 +317,17 @@ if __name__ == "__main__":
     if opts.list_codecs:
         print_codecs()
         exit(0)
-    
+
+    if check_tool(opts.tool):
+        TOOL = opts.tool
+    elif check_tool("ffmpeg"):
+        TOOL = "ffmpeg"
+    elif check_tool("avconv"):
+        TOOL = "avconv"
+    else:
+        print("No uptodate or compatible capture/convertion tool found")
+        exit(0)
+
     # Check that the container format specified is supported
     if opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
         print("" + opts.container + " is not a supported container format.")
