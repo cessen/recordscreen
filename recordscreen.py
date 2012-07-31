@@ -340,7 +340,7 @@ if __name__ == "__main__":
     if len(args) >= 1:
         out_path = args[0]
         exts = out_path.rsplit(".", 1)
-        
+
         if len(exts) == 1 or exts[1] not in ACCEPTABLE_FILE_EXTENSIONS:
             out_path += "." + opts.container
 
