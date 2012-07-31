@@ -71,6 +71,7 @@ vcodecs["h264"] = ["-c:v", "libx264", "-vprofile", "baseline", "-g", "15", "-crf
 vcodecs["mpeg4"] = ["-c:v", "mpeg4", "-g", "15", "-qmax", "1", "-qmin", "1"]
 #vcodecs["xvid"] = ["-c:v", "libxvid", "-g", "15", "-b:v", "40000k"]
 vcodecs["huffyuv"] = ["-c:v", "huffyuv"]
+vcodecs["ffv1"] = ["-c:v", "ffv1", "-coder", "1", "-context", "1"]
 vcodecs["vp8"] = ["-c:v", "libvpx", "-g", "15", "-qmax", "1", "-qmin", "1"]
 vcodecs["theora"] = ["-c:v", "libtheora", "-g", "15", "-b:v", "40000k"]
 #vcodecs["dirac"] = ["-c:v", "libschroedinger", "-g", "15", "-b:v", "40000k"]
@@ -389,7 +390,7 @@ if __name__ == "__main__":
 
     # Make sure the capture resolution conforms to the restrictions
     # of the video codec.  Crop to conform, if necessary.
-    mults = {"h264": 2, "h264_lossless": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "vp8": 1}
+    mults = {"h264": 2, "h264_lossless": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "ffv1": 1, "vp8": 1}
     width -= width % mults[opts.vcodec]
     height -= height % mults[opts.vcodec]
 
