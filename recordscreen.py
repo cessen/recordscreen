@@ -83,6 +83,7 @@ acodecs["vorbis"] = ["-c:a", "libvorbis", "-b:a", "320k"]
 acodecs["mp3"] = ["-c:a", "libmp3lame", "-b:a", "320k"]
 acodecs["aac"] = ["-c:a", "libvo_aacenc", "-b:a", "320k"]
 acodecs["faac"] = ["-c:a", "libfaac", "-b:a", "320k"]
+acodecs["ffaac"] = ["-strict", "experimental", "-c:a", "aac", "-b:a", "320k"]
 
 
 def capture_line(fps, x, y, height, width, display_device, audio_device, video_codec, audio_codec, output_path):
