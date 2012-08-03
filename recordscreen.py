@@ -71,6 +71,7 @@ vcodecs["h264"] = ["-c:v", "libx264", "-vprofile", "baseline", "-g", "15", "-crf
 vcodecs["mpeg4"] = ["-c:v", "mpeg4", "-g", "15", "-qmax", "1", "-qmin", "1"]
 #vcodecs["xvid"] = ["-c:v", "libxvid", "-g", "15", "-b:v", "40000k"]
 vcodecs["huffyuv"] = ["-c:v", "huffyuv"]
+vcodecs["ffv1"] = ["-c:v", "ffv1", "-coder", "1", "-context", "1"]
 vcodecs["vp8"] = ["-c:v", "libvpx", "-g", "15", "-qmax", "1", "-qmin", "1"]
 vcodecs["theora"] = ["-c:v", "libtheora", "-g", "15", "-b:v", "40000k"]
 #vcodecs["dirac"] = ["-c:v", "libschroedinger", "-g", "15", "-b:v", "40000k"]
@@ -82,6 +83,8 @@ acodecs["pcm"] = ["-c:a", "pcm_s16le"]
 acodecs["vorbis"] = ["-c:a", "libvorbis", "-b:a", "320k"]
 acodecs["mp3"] = ["-c:a", "libmp3lame", "-b:a", "320k"]
 acodecs["aac"] = ["-c:a", "libvo_aacenc", "-b:a", "320k"]
+acodecs["faac"] = ["-c:a", "libfaac", "-b:a", "320k"]
+acodecs["ffaac"] = ["-strict", "experimental", "-c:a", "aac", "-b:a", "320k"]
 
 
 def capture_line(fps, x, y, height, width, display_device, audio_device, video_codec, audio_codec, output_path):
@@ -92,7 +95,7 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
     if have_multiproc:
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
-    line = ["avconv",
+    line = [TOOL,
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device),
@@ -115,7 +118,7 @@ def video_capture_line(fps, x, y, height, width, display_device, video_codec, ou
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
 
-    line = ["avconv",
+    line = [TOOL,
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
@@ -129,7 +132,7 @@ def audio_capture_line(audio_device, audio_codec, output_path):
     """ Returns the command line to capture audio (no video), in a list form
         compatible with Popen.
     """
-    line = ["avconv",
+    line = [TOOL,
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device)]
@@ -243,6 +246,23 @@ def print_codecs():
     for i in vcodecs:
         print("  " + str(i))
 
+
+def check_tool(command):
+    try:
+        proc = subprocess.Popen([command, "-c:v", "huffyuv"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, err = proc.communicate()
+        if PYTHON_3:
+            lines = str(out).split("\\n")
+        else:
+            lines = out.split("\n")
+        for line in lines:
+            if "Unrecognized option" in line:
+                raise
+        return 1
+    except:
+        return 0
+
+
 if __name__ == "__main__":
     # Parse command line arguments
     parser = optparse.OptionParser(usage="%prog [options] [output_file" + "." + DEFAULT_FILE_EXTENSION + "]")
@@ -291,6 +311,8 @@ if __name__ == "__main__":
     parser.add_option("--container", dest="container",
                       default=DEFAULT_FILE_EXTENSION,
                       help="the media container format to use if a filename is not given.  Specified by file extension.  Default: " + DEFAULT_FILE_EXTENSION)
+    parser.add_option("--tool", dest="tool",
+                      help="capture and convertion tool to use (autodetected by default)")
 
     opts, args = parser.parse_args()
 
@@ -298,7 +320,17 @@ if __name__ == "__main__":
     if opts.list_codecs:
         print_codecs()
         exit(0)
-    
+
+    if check_tool(opts.tool):
+        TOOL = opts.tool
+    elif check_tool("ffmpeg"):
+        TOOL = "ffmpeg"
+    elif check_tool("avconv"):
+        TOOL = "avconv"
+    else:
+        print("No uptodate or compatible capture/convertion tool found")
+        exit(0)
+
     # Check that the container format specified is supported
     if opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
         print("" + opts.container + " is not a supported container format.")
@@ -311,7 +343,7 @@ if __name__ == "__main__":
     if len(args) >= 1:
         out_path = args[0]
         exts = out_path.rsplit(".", 1)
-        
+
         if len(exts) == 1 or exts[1] not in ACCEPTABLE_FILE_EXTENSIONS:
             out_path += "." + opts.container
 
@@ -358,7 +390,7 @@ if __name__ == "__main__":
 
     # Make sure the capture resolution conforms to the restrictions
     # of the video codec.  Crop to conform, if necessary.
-    mults = {"h264": 2, "h264_lossless": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "vp8": 1}
+    mults = {"h264": 2, "h264_lossless": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "ffv1": 1, "vp8": 1}
     width -= width % mults[opts.vcodec]
     height -= height % mults[opts.vcodec]
 
