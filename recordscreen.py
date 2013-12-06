@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-""" A simple screen-capture utility.  Utilizes ffmpeg with h264 support.
-By default it captures the entire desktop.
+""" A simple screen-capture utility.  Utilizes ffmpeg or avconv with h264
+support. By default it captures the entire desktop.
 """
 
 ################################ LICENSE BLOCK ################################
@@ -39,9 +39,6 @@ import os
 import sys
 import os.path
 import glob
-import time
-import random
-import tempfile
 import optparse
 import subprocess
 import re

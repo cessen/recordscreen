@@ -1,4 +1,2 @@
-RecordScreen.py is a simple commandline tool for linux that lets you
-record your screen under X.org.  It uses ffmpeg to do the actual recording
-and encoding.
-
+recordscreen.py is a simple commandline tool for Linux to record screencasts
+from your desktop. It uses ffmpeg or avconv for actual recording and encoding.
