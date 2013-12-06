@@ -61,6 +61,9 @@ except ImportError:
     have_multiproc = False
 
 
+# Supported tools (executable names)
+tools = ['ffmpeg', 'avconv']
+
 # Video codec lines
 vcodecs = {}
 vcodecs["h264_lossless"] = ["-c:v", "libx264", "-g", "15", "-crf", "0", "-pix_fmt", "yuv444p"]
@@ -318,15 +321,14 @@ if __name__ == "__main__":
         print_codecs()
         exit(0)
 
-    if check_tool(opts.tool):
-        TOOL = opts.tool
-    elif check_tool("ffmpeg"):
-        TOOL = "ffmpeg"
-    elif check_tool("avconv"):
-        TOOL = "avconv"
+    for tool in tools + [opts.tool]:
+        if check_tool(tool):
+            TOOL = tool
+            break
     else:
-        print("No uptodate or compatible capture/convertion tool found")
-        exit(0)
+        print("No supported capture/convertion tool found, try")
+        print("to install one of: " + ', '.join(tools))
+        exit(-1)
 
     # Check that the container format specified is supported
     if opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
