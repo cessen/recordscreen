@@ -322,12 +322,12 @@ if __name__ == "__main__":
         print_codecs()
         exit(0)
 
-    # Checking requested tool is available
+    # Checking if tool is requested and available
     if opts.tool:
         if not check_tool(opts.tool):
             exit("Error: tool check failed for %s" % opts.tool)
         TOOL = opts.tool
-    # Autodetect tool if not
+    # Autodetect tool if not requested
     else:
         for tool in tools:
            if check_tool(tool):
