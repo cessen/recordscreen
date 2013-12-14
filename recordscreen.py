@@ -312,7 +312,8 @@ if __name__ == "__main__":
                       default=DEFAULT_FILE_EXTENSION,
                       help="the media container format to use if a filename is not given.  Specified by file extension.  Default: " + DEFAULT_FILE_EXTENSION)
     parser.add_option("--tool", dest="tool",
-                      help="capture and convertion tool to use (autodetected by default)")
+                      help="capture and conversion tool to use (autodetected by default)." +
+                           "  Supported %s." % ", ".join(tools))
 
     opts, args = parser.parse_args()
 
