@@ -322,14 +322,21 @@ if __name__ == "__main__":
         print_codecs()
         exit(0)
 
-    for tool in tools + [opts.tool]:
-        if check_tool(tool):
-            TOOL = tool
-            break
+    # Checking requested tool is available
+    if opts.tool:
+        if not check_tool(opts.tool):
+            exit("Error: tool check failed for %s" % opts.tool)
+        TOOL = opts.tool
+    # Autodetect tool if not
     else:
-        print("No supported capture/convertion tool found, try")
-        print("to install one of: " + ', '.join(tools))
-        exit(-1)
+        for tool in tools:
+           if check_tool(tool):
+               TOOL = tool
+               break
+        else:
+            print("No supported capture/convertion tool found, try")
+            print("to install one of: " + ', '.join(tools))
+            exit(-1)
 
     # Check that the container format specified is supported
     if opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
