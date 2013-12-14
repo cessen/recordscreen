@@ -338,6 +338,8 @@ if __name__ == "__main__":
             print("to install one of: " + ', '.join(tools))
             exit(-1)
 
+    print("Using '%s' tool for capture and conversion." % TOOL)
+
     # Check that the container format specified is supported
     if opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
         print("" + opts.container + " is not a supported container format.")
