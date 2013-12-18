@@ -210,10 +210,12 @@ def get_window_position_and_size():
         return None
 
 
-def get_default_output_path(ext=DEFAULT_FILE_EXTENSION):
+def get_default_output_path(ext=None):
     """ Creates a default output file path.
         Pattern: out_####.ext
     """
+    if ext == None:
+        ext = DEFAULT_FILE_EXTENSION
     filenames = glob.glob("out_????" + "." + ext)
     for i in range(1, 9999):
         name = "out_" + str(i).rjust(4,'0') + "." + ext
@@ -309,8 +311,8 @@ if __name__ == "__main__":
                       default=False,
                       help="display the available audio and video codecs")
     parser.add_option("--container", dest="container",
-                      default=DEFAULT_FILE_EXTENSION,
-                      help="the media container format to use if a filename is not given.  Specified by file extension.  Default: " + DEFAULT_FILE_EXTENSION)
+                      help="the media container format to use if a filename is not given.  "
+                           "Specified by file extension.  Default: " + DEFAULT_FILE_EXTENSION)
     parser.add_option("--tool", dest="tool",
                       help="capture and conversion tool to use (autodetected by default)." +
                            "  Supported %s." % ", ".join(tools))
@@ -340,21 +342,51 @@ if __name__ == "__main__":
 
     print("Using '%s' tool for capture and conversion." % TOOL)
 
-    # Check that the container format specified is supported
-    if opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
-        print("" + opts.container + " is not a supported container format.")
-        exit(0)
 
-    # Set up default file path
-    out_path = get_default_output_path(ext=opts.container)
+    # Check that specified container format is supported
+    if opts.container and opts.container not in ACCEPTABLE_FILE_EXTENSIONS:
+        print("Error: " + opts.container + " is not a supported container format.")
+        exit(-1)
 
-    # Output file path specified on command line
-    if len(args) >= 1:
-        out_path = args[0]
-        exts = out_path.rsplit(".", 1)
+    # Set output path
+    outfile = None
+    if args:
+        outfile = args[0]
+    else:
+        outfile = get_default_output_path(ext=opts.container)
 
-        if len(exts) == 1 or exts[1] not in ACCEPTABLE_FILE_EXTENSIONS:
-            out_path += "." + opts.container
+    # Check that outfile has a valid extension for container
+    # If container format is not specified, try to guess it from filename
+    container = None
+    exts = outfile.rsplit(".", 1)
+    if len(exts) == 1 or exts[1] not in ACCEPTABLE_FILE_EXTENSIONS:
+        # No container and no valid extension
+        if not opts.container:
+            container = DEFAULT_FILE_EXTENSION
+        # Container is set, but file extension is invalid
+        else:
+            container = opts.container
+        outfile += "." + container
+    else:
+        # No container, but extension is valid
+        if not opts.container:
+            container = exts[1]
+        else:
+            container = opts.container
+
+
+    acodec = opts.acodec
+    vcodec = opts.vcodec
+    # Check and fix container/codec constaints
+    if container == "webm":
+        if vcodec not in ["vp8"]:
+            print("Warning: Selected codec (%s) is invalid for webm format\n"
+                  "         Changing codec to %s" % (vcodec, "vp8"))
+            vcodec = "vp8"
+        if acodec not in ["vorbis"]:
+            print("Warning: Selected codec (%s) is invalid for webm format\n"
+                  "         Changing codec to %s" % (acodec, "vorbis"))
+            acodec = "vorbis"
 
     # Get desktop resolution
     try:
@@ -400,8 +432,8 @@ if __name__ == "__main__":
     # Make sure the capture resolution conforms to the restrictions
     # of the video codec.  Crop to conform, if necessary.
     mults = {"h264": 2, "h264_lossless": 2, "mpeg4": 2, "dirac": 2, "xvid": 2, "theora": 8, "huffyuv": 2, "ffv1": 1, "vp8": 1}
-    width -= width % mults[opts.vcodec]
-    height -= height % mults[opts.vcodec]
+    width -= width % mults[vcodec]
+    height -= height % mults[vcodec]
 
     # Verify that capture area is on screen
     if (x + width) > dres[0] or (y + height) > dres[1]:
@@ -409,9 +441,9 @@ if __name__ == "__main__":
 
     # Capture!
     if not opts.no_audio:
-        proc = subprocess.Popen(capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, opts.vcodec, opts.acodec, out_path)).wait()
+        proc = subprocess.Popen(capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)).wait()
     else:
-        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, opts.vcodec, out_path)).wait()
+        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)).wait()
 
     print("Done!")
 
