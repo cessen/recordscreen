@@ -42,6 +42,7 @@ import glob
 import optparse
 import subprocess
 import re
+import errno
 
 
 PYTHON_3 = (sys.version_info[0] == 3)
@@ -261,8 +262,12 @@ def check_tool(command):
             if "Unrecognized option" in line:
                 raise
         return 1
-    except FileNotFoundError:
-        return 0
+    except EnvironmentError as exc:
+        # catching FileNotFoundError in Python 2/3 compatible manner
+        if exc.errno == errno.ENOENT:
+            # errno.ENOENT  - No such file or directory
+            return 0
+        raise
 
 
 if __name__ == "__main__":
