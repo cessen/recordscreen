@@ -46,6 +46,7 @@ import errno
 
 
 PYTHON_3 = (sys.version_info[0] == 3)
+DEBUG = os.getenv('RECDEBUG', False)
 
 
 # Optional packages
@@ -157,6 +158,8 @@ def get_desktop_resolution():
         try:
             proc = subprocess.Popen("xdpyinfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except OSError:
+            if DEBUG:
+                print("(debug) 'xpydinfo' call failed")
             return None
         out, err = proc.communicate()
         if PYTHON_3:
@@ -265,6 +268,8 @@ def check_tool(command):
     except EnvironmentError as exc:
         # catching FileNotFoundError in Python 2/3 compatible manner
         if exc.errno == errno.ENOENT:
+            if DEBUG:
+                print("(debug) tool '%s' not found" % command)
             # errno.ENOENT  - No such file or directory
             return 0
         raise
