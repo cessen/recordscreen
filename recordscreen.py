@@ -456,9 +456,12 @@ if __name__ == "__main__":
 
     # Capture!
     if not opts.no_audio:
-        proc = subprocess.Popen(capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)).wait()
+        cmd = capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)
     else:
-        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)).wait()
+        cmd = video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)
+    if DEBUG:
+        print("(debug) command line:\n    %s" % cmd)
+    proc = subprocess.Popen(cmd).wait()
 
     print("Done!")
 
