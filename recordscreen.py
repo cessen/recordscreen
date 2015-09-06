@@ -51,7 +51,10 @@ DEBUG = os.getenv('RECDEBUG', False)
 
 # Optional packages
 try:
-    import Tkinter
+    if PYTHON_3:
+        import tkinter
+    else:
+        import Tkinter as tkinter
     have_tk = True
 except ImportError:
     have_tk = False
@@ -148,7 +151,7 @@ def get_desktop_resolution():
     """
     if have_tk:
         # Use tk to get the desktop resolution if we have it
-        root = Tkinter.Tk()
+        root = tkinter.Tk()
         width = root.winfo_screenwidth()
         height = root.winfo_screenheight()
         root.destroy()
@@ -401,6 +404,8 @@ if __name__ == "__main__":
     # Get desktop resolution
     try:
         dres = get_desktop_resolution()
+        if DEBUG:
+            print("(debug) desktop resolution is %s" % repr(dres))
     except:
         print("Error: unable to determine desktop resolution.")
         raise
