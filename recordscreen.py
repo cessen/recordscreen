@@ -160,7 +160,7 @@ def get_desktop_resolution():
         except OSError:
             if DEBUG:
                 print("(debug) 'xpydinfo' call failed")
-            return None
+            raise
         out, err = proc.communicate()
         if PYTHON_3:
             lines = str(out).split("\\n")
