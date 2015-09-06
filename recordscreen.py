@@ -96,21 +96,28 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
     """ Returns the command line to capture video+audio, in a list form
         compatible with Popen.
     """
-    threads = 2
-    if have_multiproc:
-        # Detect the number of threads we have available
-        threads = multiprocessing.cpu_count()
-    line = [TOOL,
+    line = [TOOL]
+    # Audio input settings
+    line += [
             "-f", "alsa",
             "-ac", "2",
-            "-i", str(audio_device),
+            "-i", str(audio_device)]
+    # Video input settings
+    line += [
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
             "-i", display_device + "+" + str(x) + "," + str(y)]
     line += acodecs[audio_codec]
     line += vcodecs[video_codec]
-    line += ["-threads", str(threads), str(output_path)]
+
+    # Detect the number of threads we have available
+    threads = 2
+    if have_multiproc:
+        threads = multiprocessing.cpu_count()
+    line += ["-threads", str(threads)]
+
+    line += [str(output_path)]
     return line
 
 
