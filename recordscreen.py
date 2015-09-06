@@ -261,7 +261,7 @@ def check_tool(command):
             if "Unrecognized option" in line:
                 raise
         return 1
-    except:
+    except FileNotFoundError:
         return 0
 
 
