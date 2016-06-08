@@ -42,14 +42,19 @@ import glob
 import optparse
 import subprocess
 import re
+import errno
 
 
 PYTHON_3 = (sys.version_info[0] == 3)
+DEBUG = os.getenv('RECDEBUG', False)
 
 
 # Optional packages
 try:
-    import Tkinter
+    if PYTHON_3:
+        import tkinter
+    else:
+        import Tkinter as tkinter
     have_tk = True
 except ImportError:
     have_tk = False
@@ -146,7 +151,7 @@ def get_desktop_resolution():
     """
     if have_tk:
         # Use tk to get the desktop resolution if we have it
-        root = Tkinter.Tk()
+        root = tkinter.Tk()
         width = root.winfo_screenwidth()
         height = root.winfo_screenheight()
         root.destroy()
@@ -156,7 +161,9 @@ def get_desktop_resolution():
         try:
             proc = subprocess.Popen("xdpyinfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except OSError:
-            return None
+            if DEBUG:
+                print("(debug) 'xpydinfo' call failed")
+            raise
         out, err = proc.communicate()
         if PYTHON_3:
             lines = str(out).split("\\n")
@@ -261,8 +268,14 @@ def check_tool(command):
             if "Unrecognized option" in line:
                 raise
         return 1
-    except:
-        return 0
+    except EnvironmentError as exc:
+        # catching FileNotFoundError in Python 2/3 compatible manner
+        if exc.errno == errno.ENOENT:
+            if DEBUG:
+                print("(debug) tool '%s' not found" % command)
+            # errno.ENOENT  - No such file or directory
+            return 0
+        raise
 
 
 if __name__ == "__main__":
@@ -391,6 +404,8 @@ if __name__ == "__main__":
     # Get desktop resolution
     try:
         dres = get_desktop_resolution()
+        if DEBUG:
+            print("(debug) desktop resolution is %s" % repr(dres))
     except:
         print("Error: unable to determine desktop resolution.")
         raise
@@ -441,9 +456,12 @@ if __name__ == "__main__":
 
     # Capture!
     if not opts.no_audio:
-        proc = subprocess.Popen(capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)).wait()
+        cmd = capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)
     else:
-        proc = subprocess.Popen(video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)).wait()
+        cmd = video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)
+    if DEBUG:
+        print("(debug) command line:\n    %s" % cmd)
+    proc = subprocess.Popen(cmd).wait()
 
     print("Done!")
 
