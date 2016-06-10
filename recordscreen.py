@@ -97,6 +97,12 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
         compatible with Popen.
 
         https://trac.ffmpeg.org/wiki/Capture/Desktop
+
+        For Windows there are two capture options:
+          -f dshow     -  requires installed DirectShow filter
+          -f gdigrab   -  doesn't handle audio
+        This script doesn't know how to detect DirectShow filter, so it
+        just uses `gdigrab` way.
     """
     line = [TOOL]
 
@@ -113,9 +119,6 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
 
     # Video input settings
     if os.name == 'nt':
-        # Windows requires installed DirectShow filter
-        #  or
-        # gdigrab
         line += ["-f", "gdigrab",
                  "-framerate", str(fps),
                  "-offset_x", str(x),
