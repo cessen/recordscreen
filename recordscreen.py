@@ -104,7 +104,7 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
         This script doesn't know how to detect DirectShow filter, so it
         just uses `gdigrab` way.
     """
-    line = [TOOL]
+    line = []
 
     # Audio input settings for FFMPEG
     if os.name == 'nt':
@@ -151,7 +151,7 @@ def video_capture_line(fps, x, y, height, width, display_device, video_codec, ou
         # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
 
-    line = [TOOL,
+    line = [
             "-f", "x11grab",
             "-r", str(fps),
             "-s", "%dx%d" % (int(height), int(width)),
@@ -165,7 +165,7 @@ def audio_capture_line(audio_device, audio_codec, output_path):
     """ Returns the command line to capture audio (no video), in a list form
         compatible with Popen.
     """
-    line = [TOOL,
+    line = [
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device)]
@@ -483,10 +483,11 @@ if __name__ == "__main__":
         parser.error("specified capture area is off screen.")
 
     # Capture!
+    cmd = [TOOL]
     if not opts.no_audio:
-        cmd = capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)
+        cmd += capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)
     else:
-        cmd = video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)
+        cmd += video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)
     if DEBUG:
         print("(debug) command line:\n    %s" % cmd)
     proc = subprocess.Popen(cmd).wait()
