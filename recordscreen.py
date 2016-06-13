@@ -113,16 +113,24 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
     else:
         line += audio_capture_line(audio_device, audio_codec, output_path)
 
+    line += video_capture_line(fps, x, y, height, width, display_device, video_codec, output_path)
+    return line
+
+
+def video_capture_line(fps, x, y, height, width, display_device, video_codec, output_path):
+    """ Returns the command line to capture video (no audio), in a list form
+        compatible with Popen.
+    """
     # Video input settings
     if os.name == 'nt':
-        line += ["-f", "gdigrab",
+        line = ["-f", "gdigrab",
                  "-framerate", str(fps),
                  "-offset_x", str(x),
                  "-offset_y", str(y),
                  "-video_size", "%dx%d" % (int(height), int(width)),
                  "-i", "desktop"]
     else:
-        line += ["-f", "x11grab",
+        line = ["-f", "x11grab",
                  "-r", str(fps),
                  "-s", "%dx%d" % (int(height), int(width)),
                  "-i", display_device + "+" + str(x) + "," + str(y)]
@@ -135,25 +143,6 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
     line += ["-threads", str(threads)]
 
     line += [str(output_path)]
-    return line
-
-
-def video_capture_line(fps, x, y, height, width, display_device, video_codec, output_path):
-    """ Returns the command line to capture video (no audio), in a list form
-        compatible with Popen.
-    """
-    threads = 2
-    if have_multiproc:
-        # Detect the number of threads we have available
-        threads = multiprocessing.cpu_count()
-
-    line = [
-            "-f", "x11grab",
-            "-r", str(fps),
-            "-s", "%dx%d" % (int(height), int(width)),
-            "-i", display_device + "+" + str(x) + "," + str(y)]
-    line += vcodecs[video_codec]
-    line += ["-threads", str(threads), str(output_path)]
     return line
 
 
