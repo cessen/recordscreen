@@ -111,11 +111,7 @@ def capture_line(fps, x, y, height, width, display_device, audio_device, video_c
         print("Warning: Capturing audio on Windows is not implemented")
         pass
     else:
-        line += [
-            "-f", "alsa",
-            "-ac", "2",
-            "-i", str(audio_device)]
-        line += acodecs[audio_codec]
+        line += audio_capture_line(audio_device, audio_codec, output_path)
 
     # Video input settings
     if os.name == 'nt':
