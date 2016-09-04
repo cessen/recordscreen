@@ -239,12 +239,12 @@ def print_codecs():
     """ Prints a list of the available audio/video codecs.
     """
     print('Audio codecs:')
-    for k in sorted(acodecs.keys()):
-        print('  ' + str(k))
+    for a in sorted(acodecs):
+        print('  ' + str(a))
 
     print('Video codecs:')
-    for k in sorted(vcodecs.keys()):
-        print('  ' + str(k))
+    for v in sorted(vcodecs):
+        print('  ' + str(v))
 
 
 def check_tool(command):
