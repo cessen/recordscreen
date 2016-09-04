@@ -238,22 +238,13 @@ def get_default_output_path(ext=None):
 def print_codecs():
     """ Prints a list of the available audio/video codecs.
     """
-    a = []
-    v = []
-    for i in acodecs:
-        a += [i]
-    for i in vcodecs:
-        v += [i]
-    a.sort()
-    v.sort()
+    print('Audio codecs:')
+    for k in sorted(acodecs.keys()):
+        print('  ' + str(k))
 
-    print("Audio codecs:")
-    for i in a:
-        print("  " + str(i))
-
-    print("Video codecs:")
-    for i in vcodecs:
-        print("  " + str(i))
+    print('Video codecs:')
+    for k in sorted(vcodecs.keys()):
+        print('  ' + str(k))
 
 
 def check_tool(command):
