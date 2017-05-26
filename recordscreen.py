@@ -95,22 +95,25 @@ acodecs["ffaac"] = ["-strict", "experimental", "-c:a", "aac", "-b:a", "320k"]
 def capture_line(fps, x, y, height, width, display_device, audio_device, video_codec, audio_codec, output_path):
     """ Returns the command line to capture video+audio, in a list form
         compatible with Popen.
+
+        https://trac.ffmpeg.org/wiki/Capture/Desktop
+
+        For Windows there are two capture options:
+          -f dshow     -  requires installed DirectShow filter
+          -f gdigrab   -  doesn't handle audio
+        This script doesn't know how to detect DirectShow filter, so it
+        just uses `gdigrab` way.
     """
-    threads = 2
-    if have_multiproc:
-        # Detect the number of threads we have available
-        threads = multiprocessing.cpu_count()
-    line = [TOOL,
-            "-f", "alsa",
-            "-ac", "2",
-            "-i", str(audio_device),
-            "-f", "x11grab",
-            "-r", str(fps),
-            "-s", "%dx%d" % (int(height), int(width)),
-            "-i", display_device + "+" + str(x) + "," + str(y)]
-    line += acodecs[audio_codec]
-    line += vcodecs[video_codec]
-    line += ["-threads", str(threads), str(output_path)]
+    line = []
+
+    # Audio input settings for FFMPEG
+    if os.name == 'nt':
+        print("Warning: Capturing audio on Windows is not implemented")
+        pass
+    else:
+        line += audio_capture_line(audio_device, audio_codec, output_path)
+
+    line += video_capture_line(fps, x, y, height, width, display_device, video_codec, output_path)
     return line
 
 
@@ -118,18 +121,28 @@ def video_capture_line(fps, x, y, height, width, display_device, video_codec, ou
     """ Returns the command line to capture video (no audio), in a list form
         compatible with Popen.
     """
+    # Video input settings
+    if os.name == 'nt':
+        line = ["-f", "gdigrab",
+                 "-framerate", str(fps),
+                 "-offset_x", str(x),
+                 "-offset_y", str(y),
+                 "-video_size", "%dx%d" % (int(height), int(width)),
+                 "-i", "desktop"]
+    else:
+        line = ["-f", "x11grab",
+                 "-r", str(fps),
+                 "-s", "%dx%d" % (int(height), int(width)),
+                 "-i", display_device + "+" + str(x) + "," + str(y)]
+    line += vcodecs[video_codec]
+
+    # Detect the number of threads we have available
     threads = 2
     if have_multiproc:
-        # Detect the number of threads we have available
         threads = multiprocessing.cpu_count()
+    line += ["-threads", str(threads)]
 
-    line = [TOOL,
-            "-f", "x11grab",
-            "-r", str(fps),
-            "-s", "%dx%d" % (int(height), int(width)),
-            "-i", display_device + "+" + str(x) + "," + str(y)]
-    line += vcodecs[video_codec]
-    line += ["-threads", str(threads), str(output_path)]
+    line += [str(output_path)]
     return line
 
 
@@ -137,7 +150,7 @@ def audio_capture_line(audio_device, audio_codec, output_path):
     """ Returns the command line to capture audio (no video), in a list form
         compatible with Popen.
     """
-    line = [TOOL,
+    line = [
             "-f", "alsa",
             "-ac", "2",
             "-i", str(audio_device)]
@@ -310,10 +323,10 @@ if __name__ == "__main__":
                       help="number of pixels to crop off the right of the capture area")
     parser.add_option("-a", "--audio-device", dest="audio_device",
                       default=DEFAULT_CAPTURE_AUDIO_DEVICE,
-                      help="the audio device to capture from (eg. hw:0).  Default: " + DEFAULT_CAPTURE_AUDIO_DEVICE)
+                      help="Linux audio device to capture from (eg. hw:0).  Default: " + DEFAULT_CAPTURE_AUDIO_DEVICE)
     parser.add_option("-d", "--display-device", dest="display_device",
                       default=DEFAULT_CAPTURE_DISPLAY_DEVICE,
-                      help="the display device to capture from (eg. :0.0).  Default: " + DEFAULT_CAPTURE_DISPLAY_DEVICE)
+                      help="Linux display device to capture from (eg. :0.0).  Default: " + DEFAULT_CAPTURE_DISPLAY_DEVICE)
     parser.add_option("--acodec", dest="acodec",
                       default=DEFAULT_AUDIO_CODEC,
                       help="the audio codec to encode with.  Default: " + DEFAULT_AUDIO_CODEC)
@@ -455,10 +468,11 @@ if __name__ == "__main__":
         parser.error("specified capture area is off screen.")
 
     # Capture!
+    cmd = [TOOL]
     if not opts.no_audio:
-        cmd = capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)
+        cmd += capture_line(fps, x, y, width, height, opts.display_device, opts.audio_device, vcodec, acodec, outfile)
     else:
-        cmd = video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)
+        cmd += video_capture_line(fps, x, y, width, height, opts.display_device, vcodec, outfile)
     if DEBUG:
         print("(debug) command line:\n    %s" % cmd)
     proc = subprocess.Popen(cmd).wait()
